@@ -1,0 +1,38 @@
+name: Ladybird PS5 - fase 1 (js)
+on:
+  workflow_dispatch:
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 350
+    steps:
+      - uses: actions/checkout@v4
+      - name: Scompatta il kit
+        run: |
+          echo "zip presenti nel repository:"
+          ls -la *.zip
+          n=$(ls *.zip 2>/dev/null | wc -l)
+          if [ "$n" -ne 1 ]; then
+            echo "::error::ci sono $n file zip: deve essercene uno solo."
+            echo "Cancella i doppioni (per esempio 'ladybird-ps5-kit (1).zip') e riprova."
+            exit 1
+          fi
+          Z=$(ls *.zip)
+          echo "uso: $Z"
+          sha256sum "$Z"
+          unzip -o "$Z"
+      - name: Memoria dei tentativi precedenti
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/vcpkg/archives
+          key: ps5-js-${{ github.run_id }}
+          restore-keys: ps5-js-
+      - name: Compila
+        run: bash ladybird-ps5/ci/run_ci.sh
+      - name: Risultati
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ladybird-ps5-fase1
+          path: out
+          retention-days: 14
